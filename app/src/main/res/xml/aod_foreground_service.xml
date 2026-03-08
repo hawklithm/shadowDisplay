@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<foreground-service-type xmlns:android="http://schemas.android.com/apk/res/android">
+    <description>
+        息屏显示服务在屏幕关闭后继续显示时钟、日期和电量信息。
+        服务使用前台服务保证后台运行，在OLED屏幕上耗电极低。
+    </description>
+</foreground-service-type>

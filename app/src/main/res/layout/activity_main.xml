@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0A0A"
+    android:fillViewport="true"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- 标题区域 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textColor="#FFFFFF"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="让等待变得有趣"
+                android:textColor="#808080"
+                android:textSize="15sp"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
+        <!-- 立即启动按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_preview"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="24dp"
+            android:text="立即启动屏保"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:elevation="8dp"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_media_play"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            app:iconSize="28dp"
+            app:backgroundTint="#6200EE"
+            app:strokeWidth="0dp" />
+
+        <!-- 屏保模式选择 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="选择屏保模式"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp" />
+
+                <RadioGroup
+                    android:id="@+id/rg_display_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <RadioButton
+                        android:id="@+id/rb_digital_clock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="数字时钟"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp"
+                        android:buttonTint="#6200EE" />
+
+                    <RadioButton
+                        android:id="@+id/rb_analog_clock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="指针时钟"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp"
+                        android:buttonTint="#6200EE" />
+
+                    <RadioButton
+                        android:id="@+id/rb_wall_e_eyes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="瓦力眼睛"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp"
+                        android:buttonTint="#6200EE" />
+
+                    <RadioButton
+                        android:id="@+id/rb_minion_eyes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="小黄人眼睛"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:buttonTint="#6200EE" />
+
+                </RadioGroup>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 设置入口 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="设置与选项"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_dream_settings"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="屏保设置"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#BB86FC"
+                    app:strokeColor="#BB86FC"
+                    app:cornerRadius="12dp"
+                    android:layout_marginBottom="12dp"
+                    app:icon="@android:drawable/ic_menu_preferences"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_battery_optimization"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="电池优化设置"
+                    android:textSize="16sp"
+                    android:textColor="#03DAC6"
+                    app:strokeColor="#03DAC6"
+                    app:cornerRadius="12dp"
+                    android:layout_marginBottom="12dp"
+                    app:icon="@android:drawable/ic_menu_save"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tutorial"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="使用教程"
+                    android:textSize="16sp"
+                    android:textColor="#CF6679"
+                    app:strokeColor="#CF6679"
+                    app:cornerRadius="12dp"
+                    app:icon="@android:drawable/ic_menu_info_details"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</ScrollView>

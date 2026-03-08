@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">趣味屏保</string>
+
+    <!-- 权限 -->
+    <string name="battery_optimization_settings">电池优化设置</string>
+
+    <!-- DreamService -->
+    <string name="dream_description">趣味屏保 - 数字时钟/指针时钟/机器人眼睛</string>
+
+    <!-- 应用描述 -->
+    <string name="app_description">趣味屏保功能使用系统屏保机制，在设备充电或锁屏时显示个性化内容。\n\n功能特点：\n1. 数字时钟：大字体数字时间显示\n2. 指针时钟：传统表盘指针显示\n3. 瓦力眼睛：机械感大眼睛动画\n4. 小黄人眼睛：活泼单眼眼镜动画\n\n使用说明：\n1. 选择喜欢的屏保模式\n2. 选择屏保启用条件（充电时/始终）\n3. 点击\"打开屏保设置\"按钮\n4. 在系统设置中启用\"趣味屏保\"\n5. 配置屏保自动启动时间（如充电时）\n\n注意事项：\n1. 建议关闭电池优化以保证屏保正常运行\n2. OLED屏幕耗电极低，LCD屏幕略有增加\n3. 支持横竖屏自动适配</string>
+</resources>

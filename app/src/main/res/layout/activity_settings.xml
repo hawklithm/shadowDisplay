@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0A0A"
+    android:fillViewport="true"
+    tools:context=".SettingsActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- 标题栏 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="32dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_back"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                app:icon="@android:drawable/ic_menu_revert"
+                app:iconTint="#FFFFFF"
+                app:iconSize="28dp"
+                android:layout_marginEnd="16dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="屏保设置"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:gravity="center_vertical" />
+
+            <View
+                android:layout_width="56dp"
+                android:layout_height="56dp" />
+
+        </LinearLayout>
+
+        <!-- 屏保触发模式选择 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="启用时机"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="20dp" />
+
+                <RadioGroup
+                    android:id="@+id/rg_trigger_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <RadioButton
+                        android:id="@+id/rb_charging_only"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="仅充电时"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="16dp"
+                        android:buttonTint="#6200EE" />
+
+                    <RadioButton
+                        android:id="@+id/rb_always"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="始终"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:buttonTint="#6200EE" />
+
+                </RadioGroup>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 打开系统屏保设置按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_open_system_settings"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="24dp"
+            android:text="打开系统屏保设置"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:elevation="8dp"
+            app:cornerRadius="16dp"
+            app:icon="@android:drawable/ic_menu_preferences"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            app:iconSize="28dp"
+            app:backgroundTint="#6200EE"
+            app:strokeWidth="0dp" />
+
+        <!-- 提示信息 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A1A"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💡 使用提示"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text='在系统设置中启用"趣味屏保"即可开始使用。屏保将在您选择的条件满足时自动启动。'
+                    android:textColor="#B0B0B0"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</ScrollView>
