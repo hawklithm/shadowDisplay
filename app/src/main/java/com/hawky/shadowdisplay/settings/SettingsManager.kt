@@ -107,4 +107,16 @@ class SettingsManager private constructor(context: Context) {
     fun updateTriggerMode(mode: TriggerMode) {
         prefs.edit().putString(KEY_TRIGGER_MODE, mode.name).apply()
     }
+
+    fun updateAutoRotation(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AUTO_ROTATION, enabled).apply()
+    }
+
+    fun updateAutoBrightness(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_AUTO_BRIGHTNESS, enabled).apply()
+    }
+
+    fun updateBurnInProtection(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_BURN_IN_PROTECTION, enabled).apply()
+    }
 }

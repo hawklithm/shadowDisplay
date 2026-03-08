@@ -92,12 +92,106 @@
                         android:id="@+id/rb_always"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="始终"
+                        android:text="始终 (未实现)"
                         android:textColor="#E0E0E0"
                         android:textSize="16sp"
                         android:buttonTint="#6200EE" />
 
                 </RadioGroup>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 屏保显示设置 -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="显示设置"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="20dp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_auto_rotation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="自动旋转"
+                    android:textColor="#E0E0E0"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="8dp"
+                    app:switchTextAppearance="@style/TextAppearance.AppCompat.Medium"
+                    app:thumbTint="#6200EE"
+                    app:trackTint="#6200EE" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="开启后，屏保内容会根据设备方向自动调整"
+                    android:textColor="#808080"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="16dp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#333333"
+                    android:layout_marginBottom="16dp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_auto_brightness"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="自动亮度"
+                    android:textColor="#E0E0E0"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="8dp"
+                    app:switchTextAppearance="@style/TextAppearance.AppCompat.Medium"
+                    app:thumbTint="#03DAC6"
+                    app:trackTint="#03DAC6" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="根据环境光自动调整屏幕亮度，节省电量"
+                    android:textColor="#808080"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="16dp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_burn_in_protection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="烧屏保护"
+                    android:textColor="#E0E0E0"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="8dp"
+                    app:switchTextAppearance="@style/TextAppearance.AppCompat.Medium"
+                    app:thumbTint="#CF6679"
+                    app:trackTint="#CF6679" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="轻微移动内容位置，防止OLED屏幕烧屏"
+                    android:textColor="#808080"
+                    android:textSize="13sp" />
 
             </LinearLayout>
 

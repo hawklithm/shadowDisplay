@@ -41,7 +41,8 @@
         <service
             android:name=".service.LockScreenDreamService"
             android:exported="true"
-            android:permission="android.permission.BIND_DREAM_SERVICE">
+            android:permission="android.permission.BIND_DREAM_SERVICE"
+            android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.service.dreams.DreamService" />
                 <category android:name="android.intent.category.DEFAULT" />

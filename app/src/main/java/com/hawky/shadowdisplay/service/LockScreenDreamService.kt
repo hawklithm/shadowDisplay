@@ -2,6 +2,7 @@ package com.hawky.shadowdisplay.service
 
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.BatteryManager
 import android.os.Build
@@ -19,6 +20,7 @@ import com.hawky.shadowdisplay.views.RobotEyesView
 /**
  * 趣味屏保服务
  * 支持4种显示模式：数字时钟、指针时钟、瓦力眼睛、小黄人眼睛
+ * 支持功耗优化：自动亮度、烧屏保护、低电量检测
  */
 class LockScreenDreamService : DreamService() {
 
@@ -28,10 +30,14 @@ class LockScreenDreamService : DreamService() {
 
     private var currentView: View? = null
     private val settings = SettingsManager.getInstance(this)
+    private var powerOptimization: PowerOptimizationHelper? = null
 
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "FunScreenSaver onCreate")
+        
+        // 初始化功耗优化
+        powerOptimization = PowerOptimizationHelper(this, settings)
     }
 
     override fun onDreamingStarted() {
@@ -45,14 +51,25 @@ class LockScreenDreamService : DreamService() {
             return
         }
 
+        // 检查电池状态
+        powerOptimization?.checkBatteryStatus()
+
         // 设置窗口属性
         setupWindow()
+
+        // 应用亮度设置
+        powerOptimization?.applyBrightnessSettings()
 
         // 创建显示视图
         createContentView()
 
         // 进入沉浸式全屏模式
         enterFullscreenImmersive()
+
+        // 启动烧屏保护
+        if (settings.getSettings().burnInProtection) {
+            currentView?.let { powerOptimization?.startBurnInProtection(it) }
+        }
 
         Log.d(TAG, "屏保设置完成")
     }
@@ -104,7 +121,7 @@ class LockScreenDreamService : DreamService() {
         }
 
         // 设置横竖屏
-        val isLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         when (currentView) {
             is DigitalClockView -> (currentView as DigitalClockView).setLandscape(isLandscape)
             is AnalogClockView -> (currentView as AnalogClockView).setLandscape(isLandscape)
@@ -156,8 +173,35 @@ class LockScreenDreamService : DreamService() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Log.d(TAG, "配置变化: ${if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) "横屏" else "竖屏"}")
+
+        // 如果开启了自动旋转，更新视图布局
+        if (settings.getSettings().autoRotation) {
+            updateViewOrientation()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "DreamService onDestroy")
+        
+        // 清理功耗优化资源
+        powerOptimization?.cleanup()
+    }
+
+    /**
+     * 更新视图的横竖屏状态
+     */
+    private fun updateViewOrientation() {
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        Log.d(TAG, "更新视图方向: ${if (isLandscape) "横屏" else "竖屏"}")
+
+        when (currentView) {
+            is DigitalClockView -> (currentView as DigitalClockView).setLandscape(isLandscape)
+            is AnalogClockView -> (currentView as AnalogClockView).setLandscape(isLandscape)
+            is RobotEyesView -> (currentView as RobotEyesView).setLandscape(isLandscape)
+        }
     }
 }
