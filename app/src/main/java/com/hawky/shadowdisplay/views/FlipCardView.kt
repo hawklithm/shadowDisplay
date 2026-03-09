@@ -116,14 +116,11 @@ class FlipCardView @JvmOverloads constructor(
         cardWidth = w.toFloat()
         cardHeight = h.toFloat()
 
-        // 数字大小为卡片高度的80%-85%，根据屏幕比例动态调整
-        // 横屏时数字稍大，竖屏时数字稍小以适应窄屏
-        val screenRatio = if (w > h) {
-            0.85f // 横屏
-        } else {
-            0.78f // 竖屏
-        }
-        digitSize = h * screenRatio
+        // 数字大小：取卡片宽度和高度中较小的值的80%，确保数字能完整显示
+        // 同时不能超过卡片高度
+        val maxDigitSizeByHeight = h * 0.8f
+        val maxDigitSizeByWidth = w * 0.9f
+        digitSize = minOf(maxDigitSizeByHeight, maxDigitSizeByWidth)
         paint.textSize = digitSize
 
         // 立即设置初始数字
@@ -150,7 +147,8 @@ class FlipCardView @JvmOverloads constructor(
      * 绘制卡片背景
      */
     private fun drawCardBackground(canvas: Canvas) {
-        val cornerRadius = 20f
+        // 圆角根据卡片尺寸动态调整，保持合理的圆角大小
+        val cornerRadius = min(cardWidth, cardHeight) * 0.1f
 
         // 绘制背景（纯黑色，带圆角）
         val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -194,28 +192,28 @@ class FlipCardView @JvmOverloads constructor(
      */
     private fun drawFlipAnimation(canvas: Canvas) {
         val centerY = cardHeight / 2
-        val cornerRadius = min(cardWidth, cardHeight) * 0.08f
-        val borderRadius = maxOf(cornerRadius, 15f) // 最小15px
+        // 圆角根据卡片尺寸动态调整
+        val cornerRadius = min(cardWidth, cardHeight) * 0.1f
 
         // 第一阶段：上半部分向下翻转（0-0.5）
         if (animationProgress < 0.5f) {
             val progress = animationProgress * 2 // 0-1
 
             // 绘制下半部分（数字A的下半部分，静止）
-            drawStaticLowerHalf(canvas, currentDigit, centerY, borderRadius)
+            drawStaticLowerHalf(canvas, currentDigit, centerY, cornerRadius)
 
             // 绘制翻转的上半部分
-            drawFlippingUpperHalf3D(canvas, currentDigit, targetDigit, progress, centerY, borderRadius)
+            drawFlippingUpperHalf3D(canvas, currentDigit, targetDigit, progress, centerY, cornerRadius)
         }
         // 第二阶段：下半部分向上展开（0.5-1）
         else {
             val progress = (animationProgress - 0.5f) * 2 // 0-1
 
             // 绘制上半部分（数字B的上半部分，静止）
-            drawStaticUpperHalf(canvas, targetDigit, centerY, borderRadius)
+            drawStaticUpperHalf(canvas, targetDigit, centerY, cornerRadius)
 
             // 绘制展开的下半部分
-            drawFlippingLowerHalf3D(canvas, targetDigit, progress, centerY, borderRadius)
+            drawFlippingLowerHalf3D(canvas, targetDigit, progress, centerY, cornerRadius)
         }
     }
 

@@ -6,12 +6,14 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import kotlin.math.min
 import java.util.*
 
 /**
  * 翻页时钟视图
+ * 自适应横竖屏，确保数字完整显示
  */
 class FlipClockView @JvmOverloads constructor(
     context: Context,
@@ -81,46 +83,94 @@ class FlipClockView @JvmOverloads constructor(
         return FlipCardView(context).apply {
             layoutParams = LayoutParams(
                 0,
-                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT,
                 1f
             ).apply {
-                setMargins(6, 6, 6, 6)
+                setMargins(4, 4, 4, 4)
             }
             setWillNotDraw(false)
         }
     }
 
     /**
-     * 动态调整卡片间距
+     * 动态调整卡片间距和尺寸
      */
-    fun updateCardMargins() {
-        // 间距根据屏幕尺寸动态调整
-        val margin = (min(width, height) * 0.01f).toInt()
+    fun updateLayoutParams() {
+        if (width <= 0 || height <= 0) return
 
+        val isLandscape = width > height
+        val minDimension = min(width, height)
+
+        // 计算边距：至少5%，确保卡片有足够空间
+        val marginPercent = if (isLandscape) 0.05f else 0.08f
+        val margin = (minDimension * marginPercent).toInt()
+
+        // 计算卡片的合适高度
+        // 竖屏时根据宽度计算，确保数字能完整显示
+        // 横屏时根据高度计算
+        val availableWidth = width - margin * 2
+        val availableHeight = height - margin * 2
+
+        // 卡片数量：4个数字 + 1个冒号
+        val cardCount = 4
+        val colonWidth = dpToPx(12)
+        val cardSpacing = dpToPx(8)
+        val totalSpacing = cardSpacing * (cardCount - 1)
+        val totalColonWidth = colonWidth
+
+        val availableCardWidth = (availableWidth - totalSpacing - totalColonWidth) / cardCount
+
+        // 卡片高度：根据宽度来，确保是方形或接近方形
+        val cardHeight = if (isLandscape) {
+            // 横屏：高度-边距
+            availableHeight - margin * 2
+        } else {
+            // 竖屏：根据宽度计算，让卡片接近正方形
+            (availableCardWidth * 1.3f).toInt().coerceAtMost(availableHeight - margin)
+        }
+
+        // 更新每个卡片的尺寸
         val cards = listOf(hourTensCard, hourUnitsCard, minuteTensCard, minuteUnitsCard)
         cards.forEach { card ->
             val lp = card.layoutParams as LayoutParams
-            lp.setMargins(margin, margin, margin, margin)
+            lp.width = availableCardWidth
+            lp.height = cardHeight
+            lp.setMargins(cardSpacing / 2, margin / 2, cardSpacing / 2, margin / 2)
             card.layoutParams = lp
         }
 
-        Log.d(TAG, "updateCardMargins: margin=$margin")
+        // 更新冒号尺寸
+        val colonLp = colonView.layoutParams as LayoutParams
+        colonLp.width = colonWidth
+        colonLp.height = cardHeight
+        colonView.layoutParams = colonLp
+
+        // 更新自己的边距
+        val parent = parent as? FrameLayout
+        if (parent != null) {
+            val layoutParams = this.layoutParams as? FrameLayout.LayoutParams
+            if (layoutParams != null) {
+                layoutParams.setMargins(margin, margin, margin, margin)
+                layoutParams.gravity = Gravity.CENTER
+                parent.updateViewLayout(this, layoutParams)
+            }
+        }
+
+        Log.d(TAG, "updateLayoutParams: w=$width, h=$height, isLandscape=$isLandscape, cardHeight=$cardHeight, cardWidth=$availableCardWidth, margin=$margin")
     }
 
     /**
-     * 更新边距以适应屏幕尺寸
+     * 更新边距以适应屏幕尺寸（兼容旧调用）
      */
     fun updateMargins() {
-        // 获取父容器
-        val parent = parent as? android.widget.FrameLayout ?: return
+        updateLayoutParams()
+    }
 
-        // 计算边距：使用屏幕最小边长的5%
-        val margin = (min(width, height) * 0.05f).toInt()
-        val layoutParams = layoutParams as? android.widget.FrameLayout.LayoutParams ?: return
-        layoutParams.setMargins(margin, margin, margin, margin)
-        parent.updateViewLayout(this, layoutParams)
-
-        Log.d(TAG, "updateMargins: margin=$margin, width=$width, height=$height")
+    /**
+     * 动态调整卡片间距（兼容旧调用）
+     */
+    fun updateCardMargins() {
+        updateLayoutParams()
     }
 
     /**
@@ -129,11 +179,9 @@ class FlipClockView @JvmOverloads constructor(
     private fun createColonView(context: Context): View {
         return View(context).apply {
             layoutParams = LayoutParams(
-                dpToPx(15),
-                LayoutParams.MATCH_PARENT
-            ).apply {
-                setMargins(5, 0, 5, 0)
-            }
+                dpToPx(12),
+                LayoutParams.WRAP_CONTENT
+            )
             setWillNotDraw(false)
         }
     }
@@ -247,20 +295,16 @@ class FlipClockView @JvmOverloads constructor(
             style = android.graphics.Paint.Style.FILL
         }
 
-        val radius = height * 0.03f
+        // 冒号大小根据卡片高度计算
+        val cardHeight = if (colonView.height > 0) colonView.height.toFloat() else height * 0.6f
+        val radius = cardHeight * 0.08f
+
+        // 冒号位置居中
+        val centerX = colonView.x + colonView.width / 2f
+        val centerY = height / 2f
 
         // 绘制冒号（两个点）
-        canvas.drawCircle(
-            colonView.x + colonView.width / 2f,
-            height * 0.4f,
-            radius,
-            paint
-        )
-        canvas.drawCircle(
-            colonView.x + colonView.width / 2f,
-            height * 0.6f,
-            radius,
-            paint
-        )
+        canvas.drawCircle(centerX, centerY - cardHeight * 0.15f, radius, paint)
+        canvas.drawCircle(centerX, centerY + cardHeight * 0.15f, radius, paint)
     }
 }

@@ -191,13 +191,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun startDisplayActivity() {
         val currentSettings = settings.getSettings()
-        DisplayActivity.start(
-            this,
-            currentSettings.displayMode,
-            currentSettings.autoRotation,
-            currentSettings.autoBrightness,
-            currentSettings.burnInProtection
-        )
+        DisplayActivity.start(this, currentSettings.displayMode)
     }
 
     /**

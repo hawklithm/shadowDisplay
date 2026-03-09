@@ -10,34 +10,65 @@ import android.service.dreams.DreamService
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
-import com.hawky.shadowdisplay.DigitalClockView
 import com.hawky.shadowdisplay.models.DisplayMode
 import com.hawky.shadowdisplay.models.TriggerMode
 import com.hawky.shadowdisplay.settings.SettingsManager
+import com.hawky.shadowdisplay.utils.BrightnessHelper
+import com.hawky.shadowdisplay.utils.DisplayViewHelper
+import com.hawky.shadowdisplay.utils.RotationHelper
 import com.hawky.shadowdisplay.views.AnalogClockView
+import com.hawky.shadowdisplay.DigitalClockView
+import com.hawky.shadowdisplay.views.FlipClockView
 import com.hawky.shadowdisplay.views.RobotEyesView
 
 /**
  * 趣味屏保服务
- * 支持4种显示模式：数字时钟、指针时钟、瓦力眼睛、小黄人眼睛
- * 支持功耗优化：自动亮度、烧屏保护、低电量检测
+ * 支持5种显示模式：数字时钟、指针时钟、翻页时钟、瓦力眼睛、小黄人眼睛
+ * 统一支持：自动旋转、自动亮度、烧屏保护
+ * 使用DisplayViewHelper和BrightnessHelper实现代码复用
  */
 class LockScreenDreamService : DreamService() {
 
     companion object {
-        private const val TAG = "FunScreenSaver"
+        private const val TAG = "LockScreenDreamService"
     }
 
+    // 显示视图
     private var currentView: View? = null
+
+    // 设置
     private val settings = SettingsManager.getInstance(this)
-    private var powerOptimization: PowerOptimizationHelper? = null
+
+    // 辅助类 - 复用DisplayViewHelper和BrightnessHelper
+    private var displayViewHelper: DisplayViewHelper? = null
+    private var brightnessHelper: BrightnessHelper? = null
+    private var rotationHelper: RotationHelper? = null
+
+    // 电池接收器
+    private var batteryReceiver: android.content.BroadcastReceiver? = null
+
+    // 状态
+    private var isAutoRotation = false
+    private var isAutoBrightness = false
+    private var isBurnInProtection = false
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "FunScreenSaver onCreate")
-        
-        // 初始化功耗优化
-        powerOptimization = PowerOptimizationHelper(this, settings)
+        Log.d(TAG, "onCreate")
+
+        // 读取设置
+        val currentSettings = settings.getSettings()
+        isAutoRotation = currentSettings.autoRotation
+        isAutoBrightness = currentSettings.autoBrightness
+        isBurnInProtection = currentSettings.burnInProtection
+
+        // 初始化辅助类
+        brightnessHelper = BrightnessHelper(this, window)
+        brightnessHelper?.initialize()
+
+        rotationHelper = RotationHelper { isLandscape ->
+            updateViewOrientation(isLandscape)
+        }
     }
 
     override fun onDreamingStarted() {
@@ -52,24 +83,28 @@ class LockScreenDreamService : DreamService() {
         }
 
         // 检查电池状态
-        powerOptimization?.checkBatteryStatus()
+        brightnessHelper?.applyBrightnessSettings()
+        checkBatteryStatus()
 
         // 设置窗口属性
         setupWindow()
 
-        // 应用亮度设置
-        powerOptimization?.applyBrightnessSettings()
-
         // 创建显示视图
         createContentView()
+
+        // 启动烧屏保护
+        if (isBurnInProtection) {
+            currentView?.let {
+                displayViewHelper = DisplayViewHelper(it)
+                displayViewHelper?.startBurnInProtection()
+            }
+        }
 
         // 进入沉浸式全屏模式
         enterFullscreenImmersive()
 
-        // 启动烧屏保护
-        if (settings.getSettings().burnInProtection) {
-            currentView?.let { powerOptimization?.startBurnInProtection(it) }
-        }
+        // 注册电池接收器
+        registerBatteryReceiver()
 
         Log.d(TAG, "屏保设置完成")
     }
@@ -78,8 +113,8 @@ class LockScreenDreamService : DreamService() {
      * 检查是否应该显示屏保
      */
     private fun shouldShowScreensaver(): Boolean {
-        val settings = settings.getSettings()
-        val triggerMode = settings.triggerMode
+        val currentSettings = settings.getSettings()
+        val triggerMode = currentSettings.triggerMode
 
         return when (triggerMode) {
             TriggerMode.MANUAL -> false  // 手动模式不在DreamService中显示
@@ -96,6 +131,39 @@ class LockScreenDreamService : DreamService() {
     }
 
     /**
+     * 检查电池状态
+     */
+    private fun checkBatteryStatus() {
+        try {
+            val batteryStatus = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+
+            if (level >= 0) {
+                brightnessHelper?.checkBatteryStatus(level)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "检查电池状态失败", e)
+        }
+    }
+
+    /**
+     * 注册电池接收器
+     */
+    private fun registerBatteryReceiver() {
+        batteryReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, intent: Intent?) {
+                val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                if (level >= 0) {
+                    brightnessHelper?.checkBatteryStatus(level)
+                }
+            }
+        }
+
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(batteryReceiver, filter)
+    }
+
+    /**
      * 设置窗口属性
      */
     private fun setupWindow() {
@@ -106,13 +174,13 @@ class LockScreenDreamService : DreamService() {
      * 创建显示视图
      */
     private fun createContentView() {
-        val settings = settings.getSettings()
-        val displayMode = settings.displayMode
+        val currentSettings = settings.getSettings()
+        val displayMode = currentSettings.displayMode
 
         currentView = when (displayMode) {
             DisplayMode.DIGITAL_CLOCK -> DigitalClockView(this)
             DisplayMode.ANALOG_CLOCK -> AnalogClockView(this)
-            DisplayMode.FLIP_CLOCK -> DigitalClockView(this)  // 翻页时钟暂时使用数字时钟
+            DisplayMode.FLIP_CLOCK -> FlipClockView(this)
             DisplayMode.ROBOT_EYES_WALL_E -> RobotEyesView(this).apply {
                 setEyeStyle(RobotEyesView.EyeStyle.WALL_E)
             }
@@ -123,11 +191,7 @@ class LockScreenDreamService : DreamService() {
 
         // 设置横竖屏
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        when (currentView) {
-            is DigitalClockView -> (currentView as DigitalClockView).setLandscape(isLandscape)
-            is AnalogClockView -> (currentView as AnalogClockView).setLandscape(isLandscape)
-            is RobotEyesView -> (currentView as RobotEyesView).setLandscape(isLandscape)
-        }
+        updateViewOrientation(isLandscape)
 
         setContentView(currentView)
 
@@ -135,6 +199,18 @@ class LockScreenDreamService : DreamService() {
         window?.decorView?.setBackgroundColor(Color.BLACK)
 
         Log.d(TAG, "已创建视图: ${displayMode.displayName}")
+    }
+
+    /**
+     * 更新视图的横竖屏状态
+     */
+    private fun updateViewOrientation(isLandscape: Boolean) {
+        when (currentView) {
+            is DigitalClockView -> (currentView as DigitalClockView).setLandscape(isLandscape)
+            is AnalogClockView -> (currentView as AnalogClockView).setLandscape(isLandscape)
+            is RobotEyesView -> (currentView as RobotEyesView).setLandscape(isLandscape)
+            is FlipClockView -> (currentView as FlipClockView).updateMargins()
+        }
     }
 
     /**
@@ -164,6 +240,21 @@ class LockScreenDreamService : DreamService() {
     override fun onDreamingStopped() {
         super.onDreamingStopped()
         Log.d(TAG, "屏保已停止")
+
+        // 停止烧屏保护
+        displayViewHelper?.stopBurnInProtection()
+        displayViewHelper = null
+
+        // 注销电池接收器
+        batteryReceiver?.let {
+            try {
+                unregisterReceiver(it)
+            } catch (e: Exception) {
+                Log.e(TAG, "注销电池接收器失败", e)
+            }
+        }
+        batteryReceiver = null
+
         currentView = null
     }
 
@@ -178,31 +269,19 @@ class LockScreenDreamService : DreamService() {
         super.onConfigurationChanged(newConfig)
         Log.d(TAG, "配置变化: ${if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) "横屏" else "竖屏"}")
 
-        // 如果开启了自动旋转，更新视图布局
-        if (settings.getSettings().autoRotation) {
-            updateViewOrientation()
-        }
+        // 处理自动旋转
+        rotationHelper?.onConfigurationChanged(newConfig, isAutoRotation)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "DreamService onDestroy")
-        
-        // 清理功耗优化资源
-        powerOptimization?.cleanup()
-    }
+        Log.d(TAG, "onDestroy")
 
-    /**
-     * 更新视图的横竖屏状态
-     */
-    private fun updateViewOrientation() {
-        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        Log.d(TAG, "更新视图方向: ${if (isLandscape) "横屏" else "竖屏"}")
+        // 清理资源
+        displayViewHelper?.stopBurnInProtection()
+        displayViewHelper = null
 
-        when (currentView) {
-            is DigitalClockView -> (currentView as DigitalClockView).setLandscape(isLandscape)
-            is AnalogClockView -> (currentView as AnalogClockView).setLandscape(isLandscape)
-            is RobotEyesView -> (currentView as RobotEyesView).setLandscape(isLandscape)
-        }
+        brightnessHelper?.cleanup()
+        brightnessHelper = null
     }
 }
