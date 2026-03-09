@@ -127,9 +127,7 @@ class DisplayActivity : AppCompatActivity() {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT
-                ).apply {
-                    gravity = android.view.Gravity.CENTER
-                }
+                )
             }
 
             DisplayMode.ROBOT_EYES_WALL_E -> RobotEyesView(this).apply {

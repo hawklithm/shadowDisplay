@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Color
 import android.util.AttributeSet
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import kotlin.math.min
@@ -123,8 +122,7 @@ class FlipClockView @JvmOverloads constructor(
         Log.d(TAG, "总间距(不含冒号): ${totalSpacing}px")
 
         // 策略：单个卡片宽高比固定为1:2（宽:高）
-        // 整个时钟 = 4个卡片 + 3个间距 + 冒号，宽高比约为2:1
-        // 冒号宽度约为单个卡片宽度的0.4倍
+        // 目标：在保持比例的前提下，最大化利用屏幕空间
 
         // 根据可用宽度和高度计算卡片尺寸
         var cardWidth = 0
@@ -133,70 +131,136 @@ class FlipClockView @JvmOverloads constructor(
 
         if (isLandscape) {
             Log.d(TAG, "--- 横屏计算 ---")
-            // 横屏：主要受高度限制
-            // 卡片高 = 可用高度
-            cardHeight = availableHeight
-            Log.d(TAG, "初始卡片高度 = 可用高度: $cardHeight")
-            // 卡片宽 = 卡片高 / 2
-            cardWidth = cardHeight / 2
-            Log.d(TAG, "初始卡片宽度 = 高度/2: $cardWidth")
-            // 冒号宽度约为卡片宽的0.4倍
-            colonWidth = (cardWidth * 0.4f).toInt()
-            Log.d(TAG, "初始冒号宽度 = 卡片宽*0.4: $colonWidth")
+            // 横屏策略：
+            // 1. 先按高度限制计算：卡片高 = 可用高度，卡片宽 = 高/2
+            // 2. 检查横向是否足够
+            // 3. 如果横向有剩余，放大；如果横向不足，缩小
+            // 4. 放大/缩小时保持1:2比例
 
-            // 检查是否超出横向空间
-            val totalClockWidth = cardWidth * cardCount + totalSpacing + colonWidth
-            Log.d(TAG, "总时钟宽度 = ${cardWidth}*$cardCount + $totalSpacing + $colonWidth = $totalClockWidth")
-            Log.d(TAG, "可用宽度 = $availableWidth")
+            // 方案A：按高度限制
+            var cardHeightByHeight = availableHeight
+            var cardWidthByHeight = cardHeightByHeight / 2
+            var colonWidthByHeight = (cardWidthByHeight * 0.4f).toInt()
+            var totalWidthByHeight = cardWidthByHeight * cardCount + totalSpacing + colonWidthByHeight
 
-            if (totalClockWidth > availableWidth) {
-                // 需要缩小
-                val scale = availableWidth.toFloat() / totalClockWidth
-                Log.d(TAG, "超出横向空间，缩小比例 = $scale")
-                cardWidth = (cardWidth * scale).toInt()
-                cardHeight = (cardHeight * scale).toInt()
-                colonWidth = (colonWidth * scale).toInt()
+            // 方案B：按宽度限制（假设时钟宽度占可用宽度的90%，留10%边距）
+            var totalWidthByWidth = availableWidth * 0.9f
+            var cardWidthByWidth = ((totalWidthByWidth - totalSpacing) / 4.4f).toInt()
+            var cardHeightByWidth = cardWidthByWidth * 2
+            var colonWidthByWidth = (cardWidthByWidth * 0.4f).toInt()
+
+            Log.d(TAG, "方案A（按高度）：cardW=$cardWidthByHeight, cardH=$cardHeightByHeight, totalW=$totalWidthByHeight")
+            Log.d(TAG, "方案B（按宽度）：cardW=$cardWidthByWidth, cardH=$cardHeightByWidth, totalW=$totalWidthByWidth")
+
+            // 选择满足约束条件的最大方案
+            if (totalWidthByHeight <= availableWidth) {
+                // 方案A满足横向约束，使用方案A
+                cardWidth = cardWidthByHeight
+                cardHeight = cardHeightByHeight
+                colonWidth = colonWidthByHeight
+                Log.d(TAG, "选择方案A（按高度），完全利用纵向空间")
+            } else if (cardHeightByWidth <= availableHeight) {
+                // 方案B满足纵向约束，使用方案B
+                cardWidth = cardWidthByWidth
+                cardHeight = cardHeightByWidth
+                colonWidth = colonWidthByWidth
+                Log.d(TAG, "选择方案B（按宽度），充分利用横向空间")
             } else {
-                // 横向有剩余，可以放大到充分利用空间
-                val scale = availableWidth.toFloat() / totalClockWidth
-                Log.d(TAG, "横向有剩余，放大比例 = $scale")
-                cardWidth = (cardWidth * scale).toInt()
-                cardHeight = (cardHeight * scale).toInt()
-                colonWidth = (colonWidth * scale).toInt()
-                // 确保放大后不超过可用高度
-                if (cardHeight > availableHeight) {
-                    val scaleHeight = availableHeight.toFloat() / cardHeight
-                    Log.d(TAG, "放大后超出高度，再次缩小比例 = $scaleHeight")
-                    cardWidth = (cardWidth * scaleHeight).toInt()
+                // 两个方案都不满足，选择较小的那个
+                if (totalWidthByHeight - availableWidth < availableHeight - cardHeightByWidth) {
+                    cardWidth = cardWidthByHeight
+                    cardHeight = cardHeightByHeight
+                    colonWidth = colonWidthByHeight
+                    Log.d(TAG, "方案A超出较少，选择方案A后缩小")
+                    val scale = availableWidth.toFloat() / totalWidthByHeight
+                    cardWidth = (cardWidth * scale).toInt()
+                    cardHeight = (cardHeight * scale).toInt()
+                    colonWidth = (colonWidth * scale).toInt()
+                } else {
+                    cardWidth = cardWidthByWidth
+                    cardHeight = cardHeightByWidth
+                    colonWidth = colonWidthByWidth
+                    Log.d(TAG, "方案B超出较少，选择方案B后缩小")
+                    val scale = availableHeight.toFloat() / cardHeightByWidth
+                    cardWidth = (cardWidth * scale).toInt()
                     cardHeight = availableHeight
-                    colonWidth = (colonWidth * scaleHeight).toInt()
+                    colonWidth = (colonWidth * scale).toInt()
                 }
             }
         } else {
             Log.d(TAG, "--- 竖屏计算 ---")
-            // 竖屏：主要受宽度限制
-            // 4个卡片宽 + 3个间距 + 冒号 = 可用宽度
-            // 假设冒号 = 0.4 * 卡片宽
-            // 4.4 * 卡片宽 + 3个间距 = 可用宽度
-            cardWidth = ((availableWidth - totalSpacing) / 4.4f).toInt()
-            Log.d(TAG, "计算卡片宽度 = ($availableWidth - $totalSpacing) / 4.4 = $cardWidth")
-            // 卡片高 = 卡片宽 * 2
-            cardHeight = cardWidth * 2
-            Log.d(TAG, "卡片高度 = 卡片宽 * 2 = $cardHeight")
-            // 冒号宽度
-            colonWidth = (cardWidth * 0.4f).toInt()
-            Log.d(TAG, "冒号宽度 = 卡片宽 * 0.4 = $colonWidth")
+            // 竖屏策略：
+            // 1. 先按宽度限制计算：卡片宽 = (可用宽度-间距)/4.4，卡片高 = 宽*2
+            // 2. 检查纵向是否足够
+            // 3. 如果纵向有剩余，放大；如果纵向不足，缩小
+            // 4. 放大/缩小时保持1:2比例
 
-            // 检查是否超出纵向空间
-            if (cardHeight > availableHeight) {
-                // 需要缩小
-                val scale = availableHeight.toFloat() / cardHeight
-                Log.d(TAG, "超出纵向空间，缩小比例 = $scale")
-                cardWidth = (cardWidth * scale).toInt()
-                cardHeight = availableHeight
-                colonWidth = (colonWidth * scale).toInt()
+            // 方案A：按宽度限制（充分利用横向空间）
+            var cardWidthByWidth = ((availableWidth - totalSpacing) / 4.4f).toInt()
+            var cardHeightByWidth = cardWidthByWidth * 2
+            var colonWidthByWidth = (cardWidthByWidth * 0.4f).toInt()
+
+            // 方案B：按高度限制（时钟高度占可用高度的90%）
+            var totalHeightByHeight = availableHeight * 0.9f
+            var cardHeightByHeight = totalHeightByHeight.toInt()
+            var cardWidthByHeight = cardHeightByHeight / 2
+            var colonWidthByHeight = (cardWidthByHeight * 0.4f).toInt()
+            var totalWidthByHeight = cardWidthByHeight * cardCount + totalSpacing + colonWidthByHeight
+
+            Log.d(TAG, "方案A（按宽度）：cardW=$cardWidthByWidth, cardH=$cardHeightByWidth, totalH=$cardHeightByWidth")
+            Log.d(TAG, "方案B（按高度）：cardW=$cardWidthByHeight, cardH=$cardHeightByHeight, totalW=$totalWidthByHeight")
+
+            // 选择满足约束条件的最大方案
+            if (cardHeightByWidth <= availableHeight && totalWidthByHeight <= availableWidth) {
+                // 两个方案都满足，选择面积更大的
+                val areaA = cardWidthByWidth * cardHeightByWidth
+                val areaB = cardWidthByHeight * cardHeightByHeight
+                if (areaA >= areaB) {
+                    cardWidth = cardWidthByWidth
+                    cardHeight = cardHeightByWidth
+                    colonWidth = colonWidthByWidth
+                    Log.d(TAG, "方案A面积更大，选择方案A（充分利用横向空间）")
+                } else {
+                    cardWidth = cardWidthByHeight
+                    cardHeight = cardHeightByHeight
+                    colonWidth = colonWidthByHeight
+                    Log.d(TAG, "方案B面积更大，选择方案B（充分利用纵向空间）")
+                }
+            } else if (cardHeightByWidth <= availableHeight) {
+                // 方案A满足纵向约束，使用方案A
+                cardWidth = cardWidthByWidth
+                cardHeight = cardHeightByWidth
+                colonWidth = colonWidthByWidth
+                Log.d(TAG, "方案A满足纵向约束，选择方案A")
+            } else if (totalWidthByHeight <= availableWidth) {
+                // 方案B满足横向约束，使用方案B
+                cardWidth = cardWidthByHeight
+                cardHeight = cardHeightByHeight
+                colonWidth = colonWidthByHeight
+                Log.d(TAG, "方案B满足横向约束，选择方案B")
             } else {
-                Log.d(TAG, "纵向空间充足，无需缩小")
+                // 两个方案都不满足，选择较小的缩放比例
+                val scaleWidth = availableHeight.toFloat() / cardHeightByWidth
+                val scaleHeight = availableWidth.toFloat() / totalWidthByHeight
+                if (scaleWidth <= scaleHeight) {
+                    cardWidth = cardWidthByWidth
+                    cardHeight = cardHeightByWidth
+                    colonWidth = colonWidthByWidth
+                    Log.d(TAG, "方案A超出较少，按纵向缩小")
+                    val scale = scaleWidth
+                    cardWidth = (cardWidth * scale).toInt()
+                    cardHeight = (cardHeight * scale).toInt()
+                    colonWidth = (colonWidth * scale).toInt()
+                } else {
+                    cardWidth = cardWidthByHeight
+                    cardHeight = cardHeightByHeight
+                    colonWidth = colonWidthByHeight
+                    Log.d(TAG, "方案B超出较少，按横向缩小")
+                    val scale = scaleHeight
+                    cardWidth = (cardWidth * scale).toInt()
+                    cardHeight = (cardHeight * scale).toInt()
+                    colonWidth = (colonWidth * scale).toInt()
+                }
             }
         }
 
@@ -213,17 +277,8 @@ class FlipClockView @JvmOverloads constructor(
         calculatedColonWidth = colonWidth
         calculatedMargin = margin
 
-        // 更新自己的边距（FlipClockView自身的边距，保持5%边距）
-        val parent = parent as? FrameLayout
-        if (parent != null) {
-            val layoutParams = this.layoutParams as? FrameLayout.LayoutParams
-            if (layoutParams != null) {
-                layoutParams.setMargins(margin, margin, margin, margin)
-                layoutParams.gravity = Gravity.CENTER
-                parent.updateViewLayout(this, layoutParams)
-            }
-        }
-
+        // FlipClockView保持MATCH_PARENT，不设置边距
+        // 边距已经在计算可用空间时考虑了（availableWidth/Height）
         // 触发布局更新，使onLayout被调用
         requestLayout()
     }
@@ -258,9 +313,20 @@ class FlipClockView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         Log.d(TAG, "onSizeChanged: w=$w, h=$h, oldw=$oldw, oldh=$oldh")
-        // 更新边距和卡片间距
-        updateMargins()
-        updateCardMargins()
+
+        // 横竖屏切换时，尺寸会发生显著变化，需要重置计算状态
+        if (oldw > 0 && oldh > 0 && (w != oldw || h != oldh)) {
+            Log.d(TAG, "尺寸发生变化，重置计算状态")
+            // 重置计算结果，避免使用旧的尺寸数据
+            calculatedCardWidth = 0
+            calculatedCardHeight = 0
+            calculatedColonWidth = 0
+            calculatedMargin = 0
+        }
+
+        // 更新边距和卡片间距（只调用一次）
+        updateLayoutParams()
+
         // 立即更新一次时间
         updateTime()
     }
@@ -273,9 +339,6 @@ class FlipClockView @JvmOverloads constructor(
         // 如果计算结果可用，则手动测量子视图
         if (calculatedCardWidth > 0 && calculatedCardHeight > 0) {
             val cardSpacing = dpToPx(6)
-
-            // 计算总宽度
-            val totalWidth = calculatedCardWidth * 4 + cardSpacing * 3 + calculatedColonWidth
 
             // 手动测量每个卡片
             hourTensCard.measure(
@@ -301,8 +364,11 @@ class FlipClockView @JvmOverloads constructor(
                 MeasureSpec.makeMeasureSpec(calculatedCardHeight, MeasureSpec.EXACTLY)
             )
 
-            // 设置ViewGroup的测量尺寸
-            setMeasuredDimension(totalWidth, calculatedCardHeight)
+            // 关键修改：使用父容器传递的尺寸，而不是自己计算的 totalWidth
+            // 这样 FlipClockView 就会填满父容器
+            val width = MeasureSpec.getSize(widthMeasureSpec)
+            val height = MeasureSpec.getSize(heightMeasureSpec)
+            setMeasuredDimension(width, height)
         } else {
             // 如果计算结果不可用，使用默认测量
             super.onMeasure(widthMeasureSpec, heightMeasureSpec)
