@@ -82,7 +82,7 @@ class LockScreenDreamService : DreamService() {
         val triggerMode = settings.triggerMode
 
         return when (triggerMode) {
-            TriggerMode.ALWAYS -> true
+            TriggerMode.MANUAL -> false  // 手动模式不在DreamService中显示
 
             TriggerMode.CHARGING_ONLY -> {
                 // 检查充电状态
@@ -112,6 +112,7 @@ class LockScreenDreamService : DreamService() {
         currentView = when (displayMode) {
             DisplayMode.DIGITAL_CLOCK -> DigitalClockView(this)
             DisplayMode.ANALOG_CLOCK -> AnalogClockView(this)
+            DisplayMode.FLIP_CLOCK -> DigitalClockView(this)  // 翻页时钟暂时使用数字时钟
             DisplayMode.ROBOT_EYES_WALL_E -> RobotEyesView(this).apply {
                 setEyeStyle(RobotEyesView.EyeStyle.WALL_E)
             }

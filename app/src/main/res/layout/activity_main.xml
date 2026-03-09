@@ -110,6 +110,16 @@
                         android:buttonTint="#6200EE" />
 
                     <RadioButton
+                        android:id="@+id/rb_flip_clock"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="翻页时钟"
+                        android:textColor="#E0E0E0"
+                        android:textSize="16sp"
+                        android:layout_marginBottom="12dp"
+                        android:buttonTint="#6200EE" />
+
+                    <RadioButton
                         android:id="@+id/rb_wall_e_eyes"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

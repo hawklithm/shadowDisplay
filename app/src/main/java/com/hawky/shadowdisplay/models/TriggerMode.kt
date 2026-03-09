@@ -5,5 +5,5 @@ package com.hawky.shadowdisplay.models
  */
 enum class TriggerMode(val displayName: String) {
     CHARGING_ONLY("仅充电时"),
-    ALWAYS("始终")
+    MANUAL("手动开启")
 }

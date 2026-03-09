@@ -37,6 +37,12 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".DisplayActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize"
+            android:launchMode="singleTop" />
+
         <!-- DreamService（屏保服务） -->
         <service
             android:name=".service.LockScreenDreamService"

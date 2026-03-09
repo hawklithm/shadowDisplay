@@ -66,7 +66,7 @@ class SettingsActivity : AppCompatActivity() {
         rgTriggerMode.setOnCheckedChangeListener { _, checkedId ->
             val mode = when (checkedId) {
                 R.id.rb_charging_only -> TriggerMode.CHARGING_ONLY
-                R.id.rb_always -> TriggerMode.ALWAYS
+                R.id.rb_always -> TriggerMode.MANUAL
                 else -> TriggerMode.CHARGING_ONLY
             }
             settings.updateTriggerMode(mode)
@@ -118,7 +118,7 @@ class SettingsActivity : AppCompatActivity() {
         // 加载触发模式
         val triggerModeRbId = when (currentSettings.triggerMode) {
             TriggerMode.CHARGING_ONLY -> R.id.rb_charging_only
-            TriggerMode.ALWAYS -> R.id.rb_always
+            TriggerMode.MANUAL -> R.id.rb_always
         }
         findViewById<RadioGroup>(R.id.rg_trigger_mode).check(triggerModeRbId)
 

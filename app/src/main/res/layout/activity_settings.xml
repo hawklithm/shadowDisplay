@@ -92,7 +92,7 @@
                         android:id="@+id/rb_always"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="始终 (未实现)"
+                        android:text="手动开启"
                         android:textColor="#E0E0E0"
                         android:textSize="16sp"
                         android:buttonTint="#6200EE" />

@@ -1,8 +1,9 @@
 package com.hawky.shadowdisplay
 
-import android.app.Activity
-import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -23,10 +24,12 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "MainActivity"
         private const val REQUEST_DREAM_SETTINGS = 1001
+        private const val PREF_LAUNCHED_FROM_PREVIEW = "launched_from_preview"
     }
 
     private lateinit var permissionManager: PermissionManager
     private lateinit var settings: SettingsManager
+    private var launchedFromPreview = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +60,26 @@ class MainActivity : AppCompatActivity() {
         permissionManager = PermissionManager.getInstance()
         settings = SettingsManager.getInstance(this)
 
+        // 读取跳转来源标记（必须在settings初始化之后）
+        launchedFromPreview = getSharedPreferences(TAG, Context.MODE_PRIVATE)
+            .getBoolean(PREF_LAUNCHED_FROM_PREVIEW, false)
+
+        // 如果是从系统屏保返回的，并且不是充电状态，显示全屏息屏
+        if (launchedFromPreview) {
+            Log.d(TAG, "从系统屏保返回，检查是否需要显示全屏息屏")
+            getSharedPreferences(TAG, Context.MODE_PRIVATE).edit()
+                .putBoolean(PREF_LAUNCHED_FROM_PREVIEW, false)
+                .apply()
+            launchedFromPreview = false
+
+            if (!isCharging()) {
+                Log.d(TAG, "未充电状态，启动全屏息屏显示")
+                startDisplayActivity()
+                finish()
+                return
+            }
+        }
+
         setupUI()
         loadSettings()
     }
@@ -78,6 +101,7 @@ class MainActivity : AppCompatActivity() {
             val mode = when (checkedId) {
                 R.id.rb_digital_clock -> DisplayMode.DIGITAL_CLOCK
                 R.id.rb_analog_clock -> DisplayMode.ANALOG_CLOCK
+                R.id.rb_flip_clock -> DisplayMode.FLIP_CLOCK
                 R.id.rb_wall_e_eyes -> DisplayMode.ROBOT_EYES_WALL_E
                 R.id.rb_minion_eyes -> DisplayMode.ROBOT_EYES_MINION
                 else -> DisplayMode.DIGITAL_CLOCK
@@ -114,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         val displayModeRbId = when (currentSettings.displayMode) {
             DisplayMode.DIGITAL_CLOCK -> R.id.rb_digital_clock
             DisplayMode.ANALOG_CLOCK -> R.id.rb_analog_clock
+            DisplayMode.FLIP_CLOCK -> R.id.rb_flip_clock
             DisplayMode.ROBOT_EYES_WALL_E -> R.id.rb_wall_e_eyes
             DisplayMode.ROBOT_EYES_MINION -> R.id.rb_minion_eyes
         }
@@ -124,28 +149,69 @@ class MainActivity : AppCompatActivity() {
      * 启动屏保预览
      */
     private fun startDreamPreview() {
-        Log.d(TAG, "启动屏保预览")
+        Log.d(TAG, "启动屏保预览，充电状态: ${isCharging()}")
 
-        try {
-            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Intent(Settings.ACTION_DREAM_SETTINGS)
-            } else {
-                null
+        // 标记是从立即启动按钮跳转的
+        getSharedPreferences(TAG, Context.MODE_PRIVATE).edit()
+            .putBoolean(PREF_LAUNCHED_FROM_PREVIEW, true)
+            .apply()
+
+        val currentSettings = settings.getSettings()
+
+        // 如果是充电状态，跳转到系统屏保页面
+        if (isCharging()) {
+            try {
+                val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    Intent(Settings.ACTION_DREAM_SETTINGS)
+                } else {
+                    null
+                }
+
+                intent?.let {
+                    startActivityForResult(it, REQUEST_DREAM_SETTINGS)
+                    Log.d(TAG, "已打开屏保设置，请选择\"趣味屏保\"进行预览")
+                    Toast.makeText(this, "请选择\"趣味屏保\"进行预览", Toast.LENGTH_LONG).show()
+                } ?: run {
+                    Log.e(TAG, "当前系统版本不支持屏保功能")
+                    Toast.makeText(this, "当前系统版本不支持屏保功能", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "启动屏保预览失败", e)
+                Toast.makeText(this, "启动失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-
-            intent?.let {
-                startActivityForResult(it, REQUEST_DREAM_SETTINGS)
-                Log.d(TAG, "已打开屏保设置，请选择\"趣味屏保\"进行预览")
-                Toast.makeText(this, "请选择\"趣味屏保\"进行预览", Toast.LENGTH_LONG).show()
-            } ?: run {
-                Log.e(TAG, "当前系统版本不支持屏保功能")
-                Toast.makeText(this, "当前系统版本不支持屏保功能", Toast.LENGTH_SHORT).show()
-            }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "启动屏保预览失败", e)
-            Toast.makeText(this, "启动失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        } else {
+            // 未充电状态，直接启动全屏息屏显示
+            Log.d(TAG, "未充电状态，启动全屏息屏显示")
+            startDisplayActivity()
         }
+    }
+
+    /**
+     * 启动全屏息屏显示
+     */
+    private fun startDisplayActivity() {
+        val currentSettings = settings.getSettings()
+        DisplayActivity.start(
+            this,
+            currentSettings.displayMode,
+            currentSettings.autoRotation,
+            currentSettings.autoBrightness,
+            currentSettings.burnInProtection
+        )
+    }
+
+    /**
+     * 检查是否正在充电
+     */
+    private fun isCharging(): Boolean {
+        val batteryStatus: Intent? = registerReceiver(
+            null,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        )
+
+        val status: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        return status == BatteryManager.BATTERY_STATUS_CHARGING ||
+               status == BatteryManager.BATTERY_STATUS_FULL
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
