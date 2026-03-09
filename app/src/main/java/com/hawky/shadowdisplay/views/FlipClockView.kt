@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
+import kotlin.math.min
 import java.util.*
 
 /**
@@ -90,6 +91,39 @@ class FlipClockView @JvmOverloads constructor(
     }
 
     /**
+     * 动态调整卡片间距
+     */
+    fun updateCardMargins() {
+        // 间距根据屏幕尺寸动态调整
+        val margin = (min(width, height) * 0.01f).toInt()
+
+        val cards = listOf(hourTensCard, hourUnitsCard, minuteTensCard, minuteUnitsCard)
+        cards.forEach { card ->
+            val lp = card.layoutParams as LayoutParams
+            lp.setMargins(margin, margin, margin, margin)
+            card.layoutParams = lp
+        }
+
+        Log.d(TAG, "updateCardMargins: margin=$margin")
+    }
+
+    /**
+     * 更新边距以适应屏幕尺寸
+     */
+    fun updateMargins() {
+        // 获取父容器
+        val parent = parent as? android.widget.FrameLayout ?: return
+
+        // 计算边距：使用屏幕最小边长的5%
+        val margin = (min(width, height) * 0.05f).toInt()
+        val layoutParams = layoutParams as? android.widget.FrameLayout.LayoutParams ?: return
+        layoutParams.setMargins(margin, margin, margin, margin)
+        parent.updateViewLayout(this, layoutParams)
+
+        Log.d(TAG, "updateMargins: margin=$margin, width=$width, height=$height")
+    }
+
+    /**
      * 创建分隔符
      */
     private fun createColonView(context: Context): View {
@@ -107,6 +141,9 @@ class FlipClockView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         Log.d(TAG, "onSizeChanged: w=$w, h=$h, oldw=$oldw, oldh=$oldh")
+        // 更新边距和卡片间距
+        updateMargins()
+        updateCardMargins()
         // 立即更新一次时间
         updateTime()
     }

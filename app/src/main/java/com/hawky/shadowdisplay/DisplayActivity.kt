@@ -102,12 +102,11 @@ class DisplayActivity : AppCompatActivity() {
                     android.widget.FrameLayout.LayoutParams.MATCH_PARENT
                 )
             }
+            // 边距将在onSizeChanged中动态计算
             marginContainer.addView(flipClockView, android.widget.FrameLayout.LayoutParams(
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT
-            ).apply {
-                setMargins(40, 40, 40, 40) // 大约5%的边距（假设屏幕宽度约800dp）
-            })
+            ))
 
             layout.addView(marginContainer)
             setContentView(layout)
@@ -149,6 +148,7 @@ class DisplayActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         displayView?.onConfigurationChanged()
+        flipClockView?.updateMargins()
         Log.d(TAG, "屏幕方向改变")
     }
 

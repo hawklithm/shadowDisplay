@@ -116,8 +116,14 @@ class FlipCardView @JvmOverloads constructor(
         cardWidth = w.toFloat()
         cardHeight = h.toFloat()
 
-        // 数字大小为卡片高度的85%（更饱满）
-        digitSize = h * 0.85f
+        // 数字大小为卡片高度的80%-85%，根据屏幕比例动态调整
+        // 横屏时数字稍大，竖屏时数字稍小以适应窄屏
+        val screenRatio = if (w > h) {
+            0.85f // 横屏
+        } else {
+            0.78f // 竖屏
+        }
+        digitSize = h * screenRatio
         paint.textSize = digitSize
 
         // 立即设置初始数字
@@ -188,27 +194,28 @@ class FlipCardView @JvmOverloads constructor(
      */
     private fun drawFlipAnimation(canvas: Canvas) {
         val centerY = cardHeight / 2
-        val cornerRadius = 20f
+        val cornerRadius = min(cardWidth, cardHeight) * 0.08f
+        val borderRadius = maxOf(cornerRadius, 15f) // 最小15px
 
         // 第一阶段：上半部分向下翻转（0-0.5）
         if (animationProgress < 0.5f) {
             val progress = animationProgress * 2 // 0-1
 
             // 绘制下半部分（数字A的下半部分，静止）
-            drawStaticLowerHalf(canvas, currentDigit, centerY, cornerRadius)
+            drawStaticLowerHalf(canvas, currentDigit, centerY, borderRadius)
 
             // 绘制翻转的上半部分
-            drawFlippingUpperHalf3D(canvas, currentDigit, targetDigit, progress, centerY, cornerRadius)
+            drawFlippingUpperHalf3D(canvas, currentDigit, targetDigit, progress, centerY, borderRadius)
         }
         // 第二阶段：下半部分向上展开（0.5-1）
         else {
             val progress = (animationProgress - 0.5f) * 2 // 0-1
 
             // 绘制上半部分（数字B的上半部分，静止）
-            drawStaticUpperHalf(canvas, targetDigit, centerY, cornerRadius)
+            drawStaticUpperHalf(canvas, targetDigit, centerY, borderRadius)
 
             // 绘制展开的下半部分
-            drawFlippingLowerHalf3D(canvas, targetDigit, progress, centerY, cornerRadius)
+            drawFlippingLowerHalf3D(canvas, targetDigit, progress, centerY, borderRadius)
         }
     }
 
