@@ -44,6 +44,31 @@ class FlipClockView @JvmOverloads constructor(
     private var calculatedColonWidth = 0
     private var calculatedMargin = 0
 
+    // 冒号呼吸灯动画
+    private var colonAlpha = 1f
+    private var isColonFadingIn = false
+    private val colonAnimationRunnable = object : Runnable {
+        override fun run() {
+            // 呼吸灯动画：缓慢出现并缓慢消失
+            val alphaStep = 0.01f // 每次变化1%透明度
+            if (isColonFadingIn) {
+                colonAlpha += alphaStep
+                if (colonAlpha >= 1f) {
+                    colonAlpha = 1f
+                    isColonFadingIn = false
+                }
+            } else {
+                colonAlpha -= alphaStep
+                if (colonAlpha <= 0.1f) {
+                    colonAlpha = 0.1f
+                    isColonFadingIn = true
+                }
+            }
+            invalidate() // 触发重绘
+            postDelayed(this, 16L) // 约60fps
+        }
+    }
+
     // 更新任务
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -415,6 +440,8 @@ class FlipClockView @JvmOverloads constructor(
     fun start() {
         updateTime()
         post(updateRunnable)
+        // 启动冒号呼吸灯动画
+        post(colonAnimationRunnable)
     }
 
     /**
@@ -422,6 +449,8 @@ class FlipClockView @JvmOverloads constructor(
      */
     fun stop() {
         removeCallbacks(updateRunnable)
+        // 停止冒号呼吸灯动画
+        removeCallbacks(colonAnimationRunnable)
     }
 
     /**
@@ -515,6 +544,9 @@ class FlipClockView @JvmOverloads constructor(
         // 冒号位置居中（在卡片区域内居中）
         val centerX = colonView.x + colonView.width / 2f
         val centerY = colonView.y + cardHeight / 2f
+
+        // 设置呼吸灯透明度
+        paint.alpha = (colonAlpha * 255).toInt()
 
         // 绘制冒号（两个点）
         canvas.drawCircle(centerX, centerY - cardHeight * 0.15f, radius, paint)
