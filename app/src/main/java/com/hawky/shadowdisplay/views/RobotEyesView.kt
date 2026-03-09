@@ -128,7 +128,7 @@ class RobotEyesView @JvmOverloads constructor(
         val height = height.toFloat()
 
         if (isLandscape) {
-            // 横屏：眼睛占屏幕高度50%
+            // 横屏：眼睛居中显示
             val eyeHeight = height * 0.5f
             val eyeWidth = eyeHeight * 0.8f // 宽高比
 
@@ -141,14 +141,14 @@ class RobotEyesView @JvmOverloads constructor(
             rightEyeRect = RectF(startX + eyeWidth + eyeSpacing, centerY - eyeHeight / 2f,
                 startX + eyeWidth + eyeSpacing + eyeWidth, centerY + eyeHeight / 2f)
         } else {
-            // 竖屏：眼睛占屏幕宽度60%
+            // 竖屏：眼睛居中显示，适当靠上一点为数字时钟留空间
             val eyeWidth = width * 0.3f // 每只眼睛占30%
             val eyeHeight = eyeWidth * 1.2f // 宽高比
 
             val eyeSpacing = eyeWidth * 0.2f
             val totalWidth = eyeWidth * 2 + eyeSpacing
             val startX = (width - totalWidth) / 2f
-            val centerY = height / 2f - eyeHeight // 留出空间给数字时钟
+            val centerY = height * 0.4f // 眼睛中心在屏幕40%的位置
 
             leftEyeRect = RectF(startX, centerY - eyeHeight / 2f, startX + eyeWidth, centerY + eyeHeight / 2f)
             rightEyeRect = RectF(startX + eyeWidth + eyeSpacing, centerY - eyeHeight / 2f,
