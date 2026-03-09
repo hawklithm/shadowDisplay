@@ -7,7 +7,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
-import android.widget.LinearLayout
 import kotlin.math.min
 import java.util.*
 
@@ -19,7 +18,7 @@ class FlipClockView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : LinearLayout(context, attrs, defStyleAttr) {
+) : FrameLayout(context, attrs, defStyleAttr) {
 
     companion object {
         private const val TAG = "FlipClockView"
@@ -40,6 +39,12 @@ class FlipClockView @JvmOverloads constructor(
     private var lastMinute = -1
     private var lastSecond = -1
 
+    // 计算后的卡片尺寸
+    private var calculatedCardWidth = 0
+    private var calculatedCardHeight = 0
+    private var calculatedColonWidth = 0
+    private var calculatedMargin = 0
+
     // 更新任务
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -49,8 +54,6 @@ class FlipClockView @JvmOverloads constructor(
     }
 
     init {
-        orientation = HORIZONTAL
-        gravity = Gravity.CENTER
         setWillNotDraw(false)
         setBackgroundColor(Color.BLACK)
         Log.d(TAG, "FlipClockView created")
@@ -81,13 +84,10 @@ class FlipClockView @JvmOverloads constructor(
      */
     private fun createFlipCard(context: Context): FlipCardView {
         return FlipCardView(context).apply {
-            layoutParams = LayoutParams(
-                0,
-                LayoutParams.WRAP_CONTENT,
-                1f
-            ).apply {
-                setMargins(4, 4, 4, 4)
-            }
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
             setWillNotDraw(false)
         }
     }
@@ -99,53 +99,121 @@ class FlipClockView @JvmOverloads constructor(
         if (width <= 0 || height <= 0) return
 
         val isLandscape = width > height
-        val minDimension = min(width, height)
 
-        // 计算边距：至少5%，确保卡片有足够空间
-        val marginPercent = if (isLandscape) 0.05f else 0.08f
-        val margin = (minDimension * marginPercent).toInt()
+        // 边距：至少5%
+        val margin = (min(width, height) * 0.05f).toInt()
 
-        // 计算卡片的合适高度
-        // 竖屏时根据宽度计算，确保数字能完整显示
-        // 横屏时根据高度计算
+        // 可用空间（减去边距）
         val availableWidth = width - margin * 2
         val availableHeight = height - margin * 2
 
-        // 卡片数量：4个数字 + 1个冒号
+        // 卡片数量：4个数字
         val cardCount = 4
-        val colonWidth = dpToPx(12)
-        val cardSpacing = dpToPx(8)
+
+        // 分隔符和间距
+        val cardSpacing = dpToPx(6)
         val totalSpacing = cardSpacing * (cardCount - 1)
-        val totalColonWidth = colonWidth
 
-        val availableCardWidth = (availableWidth - totalSpacing - totalColonWidth) / cardCount
+        Log.d(TAG, "========== updateLayoutParams 开始 ==========")
+        Log.d(TAG, "设备尺寸: 宽=${width}px, 高=${height}px")
+        Log.d(TAG, "屏幕方向: ${if (isLandscape) "横屏" else "竖屏"}")
+        Log.d(TAG, "边距: ${margin}px (5%)")
+        Log.d(TAG, "可用空间: 宽=${availableWidth}px, 高=${availableHeight}px")
+        Log.d(TAG, "卡片数量: $cardCount, 卡片间距: ${cardSpacing}px")
+        Log.d(TAG, "总间距(不含冒号): ${totalSpacing}px")
 
-        // 卡片高度：根据宽度来，确保是方形或接近方形
-        val cardHeight = if (isLandscape) {
-            // 横屏：高度-边距
-            availableHeight - margin * 2
+        // 策略：单个卡片宽高比固定为1:2（宽:高）
+        // 整个时钟 = 4个卡片 + 3个间距 + 冒号，宽高比约为2:1
+        // 冒号宽度约为单个卡片宽度的0.4倍
+
+        // 根据可用宽度和高度计算卡片尺寸
+        var cardWidth = 0
+        var cardHeight = 0
+        var colonWidth = 0
+
+        if (isLandscape) {
+            Log.d(TAG, "--- 横屏计算 ---")
+            // 横屏：主要受高度限制
+            // 卡片高 = 可用高度
+            cardHeight = availableHeight
+            Log.d(TAG, "初始卡片高度 = 可用高度: $cardHeight")
+            // 卡片宽 = 卡片高 / 2
+            cardWidth = cardHeight / 2
+            Log.d(TAG, "初始卡片宽度 = 高度/2: $cardWidth")
+            // 冒号宽度约为卡片宽的0.4倍
+            colonWidth = (cardWidth * 0.4f).toInt()
+            Log.d(TAG, "初始冒号宽度 = 卡片宽*0.4: $colonWidth")
+
+            // 检查是否超出横向空间
+            val totalClockWidth = cardWidth * cardCount + totalSpacing + colonWidth
+            Log.d(TAG, "总时钟宽度 = ${cardWidth}*$cardCount + $totalSpacing + $colonWidth = $totalClockWidth")
+            Log.d(TAG, "可用宽度 = $availableWidth")
+
+            if (totalClockWidth > availableWidth) {
+                // 需要缩小
+                val scale = availableWidth.toFloat() / totalClockWidth
+                Log.d(TAG, "超出横向空间，缩小比例 = $scale")
+                cardWidth = (cardWidth * scale).toInt()
+                cardHeight = (cardHeight * scale).toInt()
+                colonWidth = (colonWidth * scale).toInt()
+            } else {
+                // 横向有剩余，可以放大到充分利用空间
+                val scale = availableWidth.toFloat() / totalClockWidth
+                Log.d(TAG, "横向有剩余，放大比例 = $scale")
+                cardWidth = (cardWidth * scale).toInt()
+                cardHeight = (cardHeight * scale).toInt()
+                colonWidth = (colonWidth * scale).toInt()
+                // 确保放大后不超过可用高度
+                if (cardHeight > availableHeight) {
+                    val scaleHeight = availableHeight.toFloat() / cardHeight
+                    Log.d(TAG, "放大后超出高度，再次缩小比例 = $scaleHeight")
+                    cardWidth = (cardWidth * scaleHeight).toInt()
+                    cardHeight = availableHeight
+                    colonWidth = (colonWidth * scaleHeight).toInt()
+                }
+            }
         } else {
-            // 竖屏：根据宽度计算，让卡片接近正方形
-            (availableCardWidth * 1.3f).toInt().coerceAtMost(availableHeight - margin)
+            Log.d(TAG, "--- 竖屏计算 ---")
+            // 竖屏：主要受宽度限制
+            // 4个卡片宽 + 3个间距 + 冒号 = 可用宽度
+            // 假设冒号 = 0.4 * 卡片宽
+            // 4.4 * 卡片宽 + 3个间距 = 可用宽度
+            cardWidth = ((availableWidth - totalSpacing) / 4.4f).toInt()
+            Log.d(TAG, "计算卡片宽度 = ($availableWidth - $totalSpacing) / 4.4 = $cardWidth")
+            // 卡片高 = 卡片宽 * 2
+            cardHeight = cardWidth * 2
+            Log.d(TAG, "卡片高度 = 卡片宽 * 2 = $cardHeight")
+            // 冒号宽度
+            colonWidth = (cardWidth * 0.4f).toInt()
+            Log.d(TAG, "冒号宽度 = 卡片宽 * 0.4 = $colonWidth")
+
+            // 检查是否超出纵向空间
+            if (cardHeight > availableHeight) {
+                // 需要缩小
+                val scale = availableHeight.toFloat() / cardHeight
+                Log.d(TAG, "超出纵向空间，缩小比例 = $scale")
+                cardWidth = (cardWidth * scale).toInt()
+                cardHeight = availableHeight
+                colonWidth = (colonWidth * scale).toInt()
+            } else {
+                Log.d(TAG, "纵向空间充足，无需缩小")
+            }
         }
 
-        // 更新每个卡片的尺寸
-        val cards = listOf(hourTensCard, hourUnitsCard, minuteTensCard, minuteUnitsCard)
-        cards.forEach { card ->
-            val lp = card.layoutParams as LayoutParams
-            lp.width = availableCardWidth
-            lp.height = cardHeight
-            lp.setMargins(cardSpacing / 2, margin / 2, cardSpacing / 2, margin / 2)
-            card.layoutParams = lp
-        }
+        Log.d(TAG, "---------- 最终结果 ----------")
+        Log.d(TAG, "卡片宽度: $cardWidth px")
+        Log.d(TAG, "卡片高度: $cardHeight px")
+        Log.d(TAG, "冒号宽度: $colonWidth px")
+        Log.d(TAG, "卡片宽高比: ${String.format("%.2f", cardWidth.toFloat() / cardHeight)}")
+        Log.d(TAG, "========== updateLayoutParams 结束 ==========")
 
-        // 更新冒号尺寸
-        val colonLp = colonView.layoutParams as LayoutParams
-        colonLp.width = colonWidth
-        colonLp.height = cardHeight
-        colonView.layoutParams = colonLp
+        // 保存计算结果，供onLayout使用
+        calculatedCardWidth = cardWidth
+        calculatedCardHeight = cardHeight
+        calculatedColonWidth = colonWidth
+        calculatedMargin = margin
 
-        // 更新自己的边距
+        // 更新自己的边距（FlipClockView自身的边距，保持5%边距）
         val parent = parent as? FrameLayout
         if (parent != null) {
             val layoutParams = this.layoutParams as? FrameLayout.LayoutParams
@@ -156,7 +224,8 @@ class FlipClockView @JvmOverloads constructor(
             }
         }
 
-        Log.d(TAG, "updateLayoutParams: w=$width, h=$height, isLandscape=$isLandscape, cardHeight=$cardHeight, cardWidth=$availableCardWidth, margin=$margin")
+        // 触发布局更新，使onLayout被调用
+        requestLayout()
     }
 
     /**
@@ -178,9 +247,9 @@ class FlipClockView @JvmOverloads constructor(
      */
     private fun createColonView(context: Context): View {
         return View(context).apply {
-            layoutParams = LayoutParams(
-                dpToPx(12),
-                LayoutParams.WRAP_CONTENT
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
             )
             setWillNotDraw(false)
         }
@@ -194,6 +263,77 @@ class FlipClockView @JvmOverloads constructor(
         updateCardMargins()
         // 立即更新一次时间
         updateTime()
+    }
+
+    /**
+     * 手动测量布局
+     * 确保子视图按照计算好的尺寸进行测量
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // 如果计算结果可用，则手动测量子视图
+        if (calculatedCardWidth > 0 && calculatedCardHeight > 0) {
+            val cardSpacing = dpToPx(6)
+
+            // 计算总宽度
+            val totalWidth = calculatedCardWidth * 4 + cardSpacing * 3 + calculatedColonWidth
+
+            // 手动测量每个卡片
+            hourTensCard.measure(
+                MeasureSpec.makeMeasureSpec(calculatedCardWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(calculatedCardHeight, MeasureSpec.EXACTLY)
+            )
+            hourUnitsCard.measure(
+                MeasureSpec.makeMeasureSpec(calculatedCardWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(calculatedCardHeight, MeasureSpec.EXACTLY)
+            )
+            minuteTensCard.measure(
+                MeasureSpec.makeMeasureSpec(calculatedCardWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(calculatedCardHeight, MeasureSpec.EXACTLY)
+            )
+            minuteUnitsCard.measure(
+                MeasureSpec.makeMeasureSpec(calculatedCardWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(calculatedCardHeight, MeasureSpec.EXACTLY)
+            )
+
+            // 测量冒号
+            colonView.measure(
+                MeasureSpec.makeMeasureSpec(calculatedColonWidth, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(calculatedCardHeight, MeasureSpec.EXACTLY)
+            )
+
+            // 设置ViewGroup的测量尺寸
+            setMeasuredDimension(totalWidth, calculatedCardHeight)
+        } else {
+            // 如果计算结果不可用，使用默认测量
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+    }
+
+    /**
+     * 手动布局子视图
+     */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        if (calculatedCardWidth <= 0 || calculatedCardHeight <= 0) return
+
+        val cardSpacing = dpToPx(6)
+        val currentX = 0
+        val currentY = 0
+
+        // 计算每个卡片的x坐标
+        val hourTensX = currentX
+        val hourUnitsX = hourTensX + calculatedCardWidth + cardSpacing
+        val colonX = hourUnitsX + calculatedCardWidth + cardSpacing
+        val minuteTensX = colonX + calculatedColonWidth + cardSpacing
+        val minuteUnitsX = minuteTensX + calculatedCardWidth + cardSpacing
+
+        // 布局每个卡片
+        hourTensCard.layout(hourTensX, currentY, hourTensX + calculatedCardWidth, currentY + calculatedCardHeight)
+        hourUnitsCard.layout(hourUnitsX, currentY, hourUnitsX + calculatedCardWidth, currentY + calculatedCardHeight)
+        colonView.layout(colonX, currentY, colonX + calculatedColonWidth, currentY + calculatedCardHeight)
+        minuteTensCard.layout(minuteTensX, currentY, minuteTensX + calculatedCardWidth, currentY + calculatedCardHeight)
+        minuteUnitsCard.layout(minuteUnitsX, currentY, minuteUnitsX + calculatedCardWidth, currentY + calculatedCardHeight)
+
+        Log.d(TAG, "onLayout: 卡片布局完成，totalX=${minuteUnitsX + calculatedCardWidth}, totalY=$calculatedCardHeight")
     }
 
     /**

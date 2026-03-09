@@ -110,18 +110,30 @@ class FlipCardView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        Log.d(TAG, "onSizeChanged: w=$w, h=$h, oldw=$oldw, oldh=$oldh")
+        Log.d(TAG, "========== onSizeChanged 开始 ==========")
+        Log.d(TAG, "卡片尺寸变更: 宽=$w px, 高=$h px")
+        if (oldw > 0 || oldh > 0) {
+            Log.d(TAG, "旧尺寸: 宽=$oldw px, 高=$oldh px")
+        }
 
         // 计算卡片尺寸
         cardWidth = w.toFloat()
         cardHeight = h.toFloat()
+        Log.d(TAG, "卡片宽高比: ${String.format("%.2f", cardWidth / cardHeight)}")
 
-        // 数字大小：取卡片宽度和高度中较小的值的80%，确保数字能完整显示
-        // 同时不能超过卡片高度
-        val maxDigitSizeByHeight = h * 0.8f
-        val maxDigitSizeByWidth = w * 0.9f
-        digitSize = minOf(maxDigitSizeByHeight, maxDigitSizeByWidth)
+        // 卡片宽高比固定为1:2（宽:高），数字占卡片高度的70%
+        val digitSizeByHeight = h * 0.70f
+        Log.d(TAG, "根据高度计算数字大小: $h * 0.70 = $digitSizeByHeight")
+        // 确保数字不超过卡片宽度（考虑到数字本身有宽度）
+        val digitSizeByWidth = w * 0.95f
+        Log.d(TAG, "根据宽度计算数字大小: $w * 0.95 = $digitSizeByWidth")
+        digitSize = minOf(digitSizeByHeight, digitSizeByWidth)
         paint.textSize = digitSize
+
+        Log.d(TAG, "最终数字大小: $digitSize px")
+        Log.d(TAG, "数字占卡片高度比例: ${String.format("%.1f%%", digitSize / h * 100)}")
+        Log.d(TAG, "数字占卡片宽度比例: ${String.format("%.1f%%", digitSize / w * 100)}")
+        Log.d(TAG, "========== onSizeChanged 结束 ==========")
 
         // 立即设置初始数字
         setDigitImmediate(currentDigit)
