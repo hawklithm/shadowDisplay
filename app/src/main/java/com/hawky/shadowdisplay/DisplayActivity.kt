@@ -93,7 +93,23 @@ class DisplayActivity : AppCompatActivity() {
                     android.widget.FrameLayout.LayoutParams.MATCH_PARENT
                 )
             }
-            layout.addView(flipClockView)
+
+            // 添加边距容器，四周留5%空间
+            val marginContainer = android.widget.FrameLayout(this).apply {
+                setBackgroundColor(Color.BLACK)
+                layoutParams = android.widget.FrameLayout.LayoutParams(
+                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
+            marginContainer.addView(flipClockView, android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+            ).apply {
+                setMargins(40, 40, 40, 40) // 大约5%的边距（假设屏幕宽度约800dp）
+            })
+
+            layout.addView(marginContainer)
             setContentView(layout)
         } else {
             // 其他模式使用自定义绘制

@@ -24,7 +24,6 @@ class FlipClockView @JvmOverloads constructor(
     }
 
     // 卡片视图
-    private lateinit var periodView: PeriodView
     private lateinit var hourTensCard: FlipCardView
     private lateinit var hourUnitsCard: FlipCardView
     private lateinit var minuteTensCard: FlipCardView
@@ -50,18 +49,8 @@ class FlipClockView @JvmOverloads constructor(
         orientation = HORIZONTAL
         gravity = Gravity.CENTER
         setWillNotDraw(false)
+        setBackgroundColor(Color.BLACK)
         Log.d(TAG, "FlipClockView created")
-
-        // 创建时段视图（AM/PM）- 固定宽度
-        periodView = PeriodView(context).apply {
-            layoutParams = LayoutParams(
-                dpToPx(60),
-                LayoutParams.MATCH_PARENT
-            ).apply {
-                setMargins(10, 0, 10, 0)
-            }
-        }
-        addView(periodView)
 
         // 小时十位
         hourTensCard = createFlipCard(context)
@@ -94,7 +83,7 @@ class FlipClockView @JvmOverloads constructor(
                 LayoutParams.MATCH_PARENT,
                 1f
             ).apply {
-                setMargins(4, 4, 4, 4)
+                setMargins(6, 6, 6, 6)
             }
             setWillNotDraw(false)
         }
@@ -106,10 +95,10 @@ class FlipClockView @JvmOverloads constructor(
     private fun createColonView(context: Context): View {
         return View(context).apply {
             layoutParams = LayoutParams(
-                dpToPx(20),
+                dpToPx(15),
                 LayoutParams.MATCH_PARENT
             ).apply {
-                setMargins(8, 0, 8, 0)
+                setMargins(5, 0, 5, 0)
             }
             setWillNotDraw(false)
         }
@@ -145,10 +134,6 @@ class FlipClockView @JvmOverloads constructor(
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
         val second = calendar.get(Calendar.SECOND)
-        val isAM = calendar.get(Calendar.AM_PM) == Calendar.AM
-
-        // 更新时段
-        periodView.setPeriod(isAM)
 
         // 更新小时（24小时制）
         updateHour(hour)
@@ -225,7 +210,7 @@ class FlipClockView @JvmOverloads constructor(
             style = android.graphics.Paint.Style.FILL
         }
 
-        val radius = height * 0.04f
+        val radius = height * 0.03f
 
         // 绘制冒号（两个点）
         canvas.drawCircle(
@@ -240,61 +225,5 @@ class FlipClockView @JvmOverloads constructor(
             radius,
             paint
         )
-    }
-
-    /**
-     * 时段视图 - 显示AM/PM
-     */
-    private inner class PeriodView(context: Context) : View(context) {
-
-        private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textAlign = android.graphics.Paint.Align.LEFT
-            typeface = android.graphics.Typeface.MONOSPACE
-        }
-
-        private val backgroundPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#1A1A1A")
-            style = android.graphics.Paint.Style.FILL
-        }
-
-        private var isAM = true
-
-        init {
-            setWillNotDraw(false)
-        }
-
-        fun setPeriod(isAM: Boolean) {
-            this.isAM = isAM
-            invalidate()
-        }
-
-        override fun onDraw(canvas: android.graphics.Canvas) {
-            super.onDraw(canvas)
-
-            // 绘制背景
-            val padding = dpToPx(8)
-            canvas.drawRect(
-                padding.toFloat(),
-                padding.toFloat(),
-                (width - padding).toFloat(),
-                (height - padding).toFloat(),
-                backgroundPaint
-            )
-
-            // 绘制AM/PM文字
-            paint.textSize = height * 0.3f
-            val periodText = if (isAM) "AM" else "PM"
-            canvas.drawText(
-                periodText,
-                width / 2f,
-                height / 2f + paint.textSize / 3,
-                paint
-            )
-        }
-
-        private fun dpToPx(dp: Int): Float {
-            return dp * resources.displayMetrics.density
-        }
     }
 }
