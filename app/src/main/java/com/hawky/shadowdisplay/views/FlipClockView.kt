@@ -382,8 +382,15 @@ class FlipClockView @JvmOverloads constructor(
         if (calculatedCardWidth <= 0 || calculatedCardHeight <= 0) return
 
         val cardSpacing = dpToPx(6)
-        val currentX = 0
-        val currentY = 0
+
+        // 计算时钟总宽度
+        val totalClockWidth = calculatedCardWidth * 4 + cardSpacing * 3 + calculatedColonWidth
+
+        // 水平居中：让时钟在 FlipClockView 中水平居中
+        val currentX = (width - totalClockWidth) / 2
+
+        // 垂直居中：让时钟在 FlipClockView 中垂直居中
+        val currentY = (height - calculatedCardHeight) / 2
 
         // 计算每个卡片的x坐标
         val hourTensX = currentX
@@ -399,7 +406,7 @@ class FlipClockView @JvmOverloads constructor(
         minuteTensCard.layout(minuteTensX, currentY, minuteTensX + calculatedCardWidth, currentY + calculatedCardHeight)
         minuteUnitsCard.layout(minuteUnitsX, currentY, minuteUnitsX + calculatedCardWidth, currentY + calculatedCardHeight)
 
-        Log.d(TAG, "onLayout: 卡片布局完成，totalX=${minuteUnitsX + calculatedCardWidth}, totalY=$calculatedCardHeight")
+        Log.d(TAG, "onLayout: 卡片布局完成，currentX=$currentX, currentY=$currentY, totalClockWidth=$totalClockWidth, cardHeight=$calculatedCardHeight")
     }
 
     /**
@@ -501,13 +508,13 @@ class FlipClockView @JvmOverloads constructor(
             style = android.graphics.Paint.Style.FILL
         }
 
-        // 冒号大小根据卡片高度计算
-        val cardHeight = if (colonView.height > 0) colonView.height.toFloat() else height * 0.6f
-        val radius = cardHeight * 0.08f
+        // 冒号大小根据卡片高度计算，缩小到原来的1/4（从0.08改为0.02）
+        val cardHeight = if (calculatedCardHeight > 0) calculatedCardHeight.toFloat() else colonView.height.takeIf { it > 0 }?.toFloat() ?: 300f
+        val radius = cardHeight * 0.02f
 
-        // 冒号位置居中
+        // 冒号位置居中（在卡片区域内居中）
         val centerX = colonView.x + colonView.width / 2f
-        val centerY = height / 2f
+        val centerY = colonView.y + cardHeight / 2f
 
         // 绘制冒号（两个点）
         canvas.drawCircle(centerX, centerY - cardHeight * 0.15f, radius, paint)
